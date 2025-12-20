@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>CPU Benchmark (Single / Multi Core)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            margin: 24px;
+            max-width: 900px;
+        }
+
+        button {
+            padding: 10px 16px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .score {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .muted {
+            color: #666;
+        }
+
+        pre {
+            background: #f7f7f7;
+            padding: 12px;
+            border-radius: 10px;
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>CPU Benchmark</h1>
+
+    <div class="row">
+        <button id="run">Run benchmark</button>
+
+        <label class="row">
+            <span class="muted">Workers</span>
+            <input id="workers" type="number" min="1" step="1" style="width:90px">
+            <span class="muted">(logical cores)</span>
+        </label>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <div>
+                <div class="muted">Single-core score</div>
+                <div id="singleScore" class="score">—</div>
+            </div>
+            <div>
+                <div class="muted">Multi-core score</div>
+                <div id="multiScore" class="score">—</div>
+            </div>
+        </div>
+        <div id="env" class="muted" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+        <div class="muted">Details</div>
+        <pre id="log">Ready.</pre>
+    </div>
+
+    <script>
+        /* =======================
+           Configuration
+           ======================= */
+
+        const WARMUP_MS = 300;
+        const RUN_MS = 1500;
+        const BUFFER_SIZE = 64 * 1024;
+        const ITERS_PER_CALL = 4;
+
+        /* Reference throughput for score = 1000
+           Calibrate once on a known CPU */
+        const REF_SINGLE_TPUT = 40_000_000;
+        const REF_MULTI_TPUT = 200_000_000;
+
+        /* =======================
+           UI helpers
+           ======================= */
+
+        const logEl = document.getElementById('log');
+        const envEl = document.getElementById('env');
+        const singleScoreEl = document.getElementById('singleScore');
+        const multiScoreEl = document.getElementById('multiScore');
+        const runBtn = document.getElementById('run');
+        const workersInput = document.getElementById('workers');
+
+        function log(x) {
+            logEl.textContent = typeof x === 'string' ? x : JSON.stringify(x, null, 2);
+        }
+
+        function score(throughput, ref) {
+            return Math.round(1000 * (throughput / ref));
+        }
+
+        const logicalCores = navigator.hardwareConcurrency || 4;
+        workersInput.value = logicalCores;
+        envEl.textContent = `hardwareConcurrency = ${logicalCores}`;
+
+        /* =======================
+           CPU kernel
+           ======================= */
+
+        function cpuKernel(buf, iters) {
+            let acc = 0x9e3779b9 | 0;
+            const len = buf.length;
+
+            for (let k = 0; k < iters; k++) {
+                for (let i = 0; i < len; i++) {
+                    acc ^= buf[i];
+                    acc = Math.imul(acc, 0x85ebca6b) + 0xc2b2ae35 | 0;
+                }
+            }
+
+            buf[0] = acc & 0xff; // side effect
+        }
+
+        /* =======================
+           Single-core test
+           ======================= */
+
+        async function runSingleCore() {
+            const buf = new Uint8Array(BUFFER_SIZE);
+            for (let i = 0; i < buf.length; i++) buf[i] = i & 0xff;
+
+            let t = performance.now() + WARMUP_MS;
+            while (performance.now() < t) cpuKernel(buf, ITERS_PER_CALL);
+
+            let calls = 0;
+            const t0 = performance.now();
+            const tEnd = t0 + RUN_MS;
+            while (performance.now() < tEnd) {
+                cpuKernel(buf, ITERS_PER_CALL);
+                calls++;
+            }
+            const t1 = performance.now();
+
+            const seconds = (t1 - t0) / 1000;
+            const iterations = calls * ITERS_PER_CALL;
+
+            return {
+                iterations,
+                seconds,
+                throughput: iterations / seconds
+            };
+        }
+
+        /* =======================
+           Multi-core test
+           ======================= */
+
+        function makeWorkerURL() {
+            const src = `
+    function cpuKernel(buf, iters) {
+      let acc = 0x9e3779b9 | 0;
+      const len = buf.length;
+      for (let k = 0; k < iters; k++) {
+        for (let i = 0; i < len; i++) {
+          acc ^= buf[i];
+          acc = Math.imul(acc, 0x85ebca6b) + 0xc2b2ae35 | 0;
+        }
+      }
+      buf[0] = acc & 0xff;
+    }
+
+    onmessage = (e) => {
+      const { warmupMs, runMs, bufferSize, itersPerCall } = e.data;
+      const buf = new Uint8Array(bufferSize);
+      for (let i = 0; i < buf.length; i++) buf[i] = i & 0xff;
+
+      const now = () => performance.now();
+
+      let t = now() + warmupMs;
+      while (now() < t) cpuKernel(buf, itersPerCall);
+
+      let calls = 0;
+      const t0 = now();
+      const tEnd = t0 + runMs;
+      while (now() < tEnd) {
+        cpuKernel(buf, itersPerCall);
+        calls++;
+      }
+      const t1 = now();
+
+      const seconds = (t1 - t0) / 1000;
+      const iterations = calls * itersPerCall;
+
+      postMessage({
+        iterations,
+        seconds,
+        throughput: iterations / seconds
+      });
+    };
+  `;
+            return URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+        }
+
+        async function runMultiCore(workers) {
+            const url = makeWorkerURL();
+            const ws = [];
+            const results = [];
+
+            for (let i = 0; i < workers; i++) {
+                const w = new Worker(url);
+                ws.push(new Promise((resolve, reject) => {
+                    w.onmessage = e => {
+                        w.terminate();
+                        resolve(e.data);
+                    };
+                    w.onerror = reject;
+                    w.postMessage({
+                        warmupMs: WARMUP_MS,
+                        runMs: RUN_MS,
+                        bufferSize: BUFFER_SIZE,
+                        itersPerCall: ITERS_PER_CALL
+                    });
+                }));
+            }
+
+            const out = await Promise.all(ws);
+            URL.revokeObjectURL(url);
+
+            const totalIterations = out.reduce((s, r) => s + r.iterations, 0);
+            const maxSeconds = Math.max(...out.map(r => r.seconds));
+
+            return {
+                workers,
+                iterations: totalIterations,
+                seconds: maxSeconds,
+                throughput: totalIterations / maxSeconds,
+                perWorker: out
+            };
+        }
+
+        /* =======================
+           Runner
+           ======================= */
+
+        runBtn.onclick = async () => {
+            runBtn.disabled = true;
+            singleScoreEl.textContent = '…';
+            multiScoreEl.textContent = '…';
+
+            try {
+                const workers = Math.max(1, Math.min(256, workersInput.value | 0 || logicalCores));
+                workersInput.value = workers;
+
+                log('Running single-core…');
+                const single = await runSingleCore();
+
+                log('Running multi-core…');
+                const multi = await runMultiCore(workers);
+
+                singleScoreEl.textContent = score(single.throughput, REF_SINGLE_TPUT);
+                multiScoreEl.textContent = score(multi.throughput, REF_MULTI_TPUT);
+
+                log({ single, multi });
+            } catch (e) {
+                log(String(e));
+            } finally {
+                runBtn.disabled = false;
+            }
+        };
+    </script>
+
+</body>
+
+</html>
