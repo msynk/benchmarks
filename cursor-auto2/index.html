@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Benchmark Suite</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 CPU Benchmark Suite</h1>
+            <p class="subtitle">Comprehensive CPU Performance Testing</p>
+        </header>
+
+        <div class="cpu-info-section">
+            <h2>System Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">CPU Cores:</span>
+                    <span class="info-value" id="cpu-cores">Detecting...</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">User Agent:</span>
+                    <span class="info-value" id="user-agent">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Platform:</span>
+                    <span class="info-value" id="platform">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Hardware Concurrency:</span>
+                    <span class="info-value" id="hardware-concurrency">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <button id="start-benchmark" class="btn-primary">Start Benchmark</button>
+            <button id="stop-benchmark" class="btn-secondary" disabled>Stop</button>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="progress-text" id="progress-text">Ready to start</div>
+        </div>
+
+        <div class="tests-section">
+            <div class="test-category">
+                <h3>Single-Core Tests</h3>
+                <div id="single-core-tests" class="test-results"></div>
+            </div>
+            <div class="test-category">
+                <h3>Multi-Core Tests</h3>
+                <div id="multi-core-tests" class="test-results"></div>
+            </div>
+        </div>
+
+        <div class="results-section" id="results-section" style="display: none;">
+            <h2>Final Scores</h2>
+            <div class="scores-grid">
+                <div class="score-card">
+                    <div class="score-label">Single-Core Score</div>
+                    <div class="score-value" id="single-core-score">-</div>
+                    <div class="score-description">Performance per core</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-label">Multi-Core Score</div>
+                    <div class="score-value" id="multi-core-score">-</div>
+                    <div class="score-description">Total parallel performance</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-label">Overall Score</div>
+                    <div class="score-value" id="overall-score">-</div>
+                    <div class="score-description">Combined performance</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="benchmark.js"></script>
+</body>
+</html>
+
