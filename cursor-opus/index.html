@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Benchmark Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent-cyan: #00f5d4;
+            --accent-magenta: #f72585;
+            --accent-yellow: #fee440;
+            --accent-blue: #4cc9f0;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --border-color: #2a2a3a;
+            --gradient-1: linear-gradient(135deg, #00f5d4 0%, #4cc9f0 50%, #f72585 100%);
+            --gradient-2: linear-gradient(135deg, #f72585 0%, #fee440 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(ellipse at 20% 20%, rgba(0, 245, 212, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(247, 37, 133, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(76, 201, 240, 0.05) 0%, transparent 70%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes scoreReveal {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .cpu-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .info-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 245, 212, 0.1);
+        }
+
+        .info-card .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .info-card .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+
+        .benchmark-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            margin-bottom: 30px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title .icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .start-btn {
+            width: 100%;
+            padding: 20px 40px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            border: none;
+            border-radius: 16px;
+            background: var(--gradient-1);
+            color: var(--bg-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 245, 212, 0.3);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .scores-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .scores-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .score-card {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .score-card.single::before {
+            background: var(--accent-cyan);
+        }
+
+        .score-card.multi::before {
+            background: var(--gradient-2);
+        }
+
+        .score-type {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .score-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .score-card.single .score-value {
+            color: var(--accent-cyan);
+        }
+
+        .score-card.multi .score-value {
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .score-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .score-value.reveal {
+            animation: scoreReveal 0.6s ease-out;
+        }
+
+        .progress-section {
+            margin-top: 30px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .progress-percent {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-cyan);
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-1);
+            border-radius: 6px;
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill.running::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        .current-test {
+            margin-top: 15px;
+            padding: 15px 20px;
+            background: var(--bg-primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: 54px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .test-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .tests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .test-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .test-item.completed {
+            border-color: var(--accent-cyan);
+        }
+
+        .test-item.running {
+            border-color: var(--accent-yellow);
+            background: rgba(254, 228, 64, 0.05);
+        }
+
+        .test-item-name {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-item-score {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+        }
+
+        .test-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .test-status.completed {
+            background: var(--accent-cyan);
+        }
+
+        .test-status.running {
+            background: var(--accent-yellow);
+            animation: pulse 1s infinite;
+        }
+
+        .results-summary {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            margin-top: 30px;
+            display: none;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .results-summary.visible {
+            display: block;
+        }
+
+        .summary-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-name {
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+
+        .comparison-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .comparison-badge.excellent {
+            background: rgba(0, 245, 212, 0.2);
+            color: var(--accent-cyan);
+        }
+
+        .comparison-badge.good {
+            background: rgba(254, 228, 64, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        .comparison-badge.average {
+            background: rgba(76, 201, 240, 0.2);
+            color: var(--accent-blue);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="logo">CPU Benchmark Pro</h1>
+            <p class="tagline">Measure your processor's true potential</p>
+        </header>
+
+        <div class="cpu-info-grid">
+            <div class="info-card">
+                <div class="label">Logical Cores</div>
+                <div class="value" id="coreCount">-</div>
+            </div>
+            <div class="info-card">
+                <div class="label">Platform</div>
+                <div class="value" id="platform">-</div>
+            </div>
+            <div class="info-card">
+                <div class="label">Device Memory</div>
+                <div class="value" id="memory">-</div>
+            </div>
+            <div class="info-card">
+                <div class="label">User Agent</div>
+                <div class="value" id="userAgent" style="font-size: 0.75rem; word-break: break-all;">-</div>
+            </div>
+        </div>
+
+        <div class="benchmark-section">
+            <div class="section-title">
+                <span class="icon">⚡</span>
+                Performance Scores
+            </div>
+
+            <div class="scores-container">
+                <div class="score-card single">
+                    <div class="score-type">Single-Core</div>
+                    <div class="score-value" id="singleScore">---</div>
+                    <div class="score-label">points</div>
+                </div>
+                <div class="score-card multi">
+                    <div class="score-type">Multi-Core</div>
+                    <div class="score-value" id="multiScore">---</div>
+                    <div class="score-label">points</div>
+                </div>
+            </div>
+
+            <button class="start-btn" id="startBtn" onclick="startBenchmark()">
+                Start Benchmark
+            </button>
+
+            <div class="progress-section hidden" id="progressSection">
+                <div class="progress-header">
+                    <span class="progress-title">Benchmark Progress</span>
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="current-test" id="currentTest">
+                    <div class="spinner"></div>
+                    <span class="test-name">Initializing...</span>
+                </div>
+            </div>
+
+            <div class="tests-grid" id="testsGrid"></div>
+        </div>
+
+        <div class="results-summary" id="resultsSummary">
+            <div class="summary-title">📊 Detailed Results</div>
+            <div id="summaryContent"></div>
+        </div>
+
+        <footer>
+            <p>CPU Benchmark Pro • Results may vary based on browser, system load, and thermal conditions</p>
+        </footer>
+    </div>
+
+    <script>
+        // CPU Information
+        const cpuInfo = {
+            cores: navigator.hardwareConcurrency || 4,
+            platform: navigator.platform || 'Unknown',
+            memory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'N/A',
+            userAgent: navigator.userAgent
+        };
+
+        document.getElementById('coreCount').textContent = cpuInfo.cores;
+        document.getElementById('platform').textContent = cpuInfo.platform;
+        document.getElementById('memory').textContent = cpuInfo.memory;
+        document.getElementById('userAgent').textContent = cpuInfo.userAgent.substring(0, 80) + '...';
+
+        // Benchmark Tests Configuration
+        const benchmarkTests = [
+            { id: 'prime', name: 'Prime Numbers', description: 'Sieve of Eratosthenes', weight: 1.2 },
+            { id: 'matrix', name: 'Matrix Operations', description: 'Dense matrix multiplication', weight: 1.3 },
+            { id: 'crypto', name: 'Cryptographic Hash', description: 'SHA-256 iterations', weight: 1.1 },
+            { id: 'float', name: 'Floating Point', description: 'Trigonometric operations', weight: 1.0 },
+            { id: 'integer', name: 'Integer Math', description: 'Arithmetic operations', weight: 1.0 },
+            { id: 'memory', name: 'Memory Access', description: 'Sequential & random access', weight: 0.9 },
+            { id: 'sort', name: 'Sorting Algorithm', description: 'QuickSort implementation', weight: 1.1 },
+            { id: 'fib', name: 'Fibonacci', description: 'Recursive calculation', weight: 0.8 },
+            { id: 'monte', name: 'Monte Carlo', description: 'Pi estimation simulation', weight: 1.0 },
+            { id: 'compress', name: 'Data Compression', description: 'LZ77-style compression', weight: 1.0 }
+        ];
+
+        let isRunning = false;
+        let testResults = {};
+        let workers = [];
+
+        // Initialize test grid
+        function initTestGrid() {
+            const grid = document.getElementById('testsGrid');
+            grid.innerHTML = benchmarkTests.map(test => `
+                <div class="test-item" id="test-${test.id}">
+                    <span class="test-item-name">
+                        <span class="test-status" id="status-${test.id}"></span>
+                        ${test.name}
+                    </span>
+                    <span class="test-item-score" id="score-${test.id}">-</span>
+                </div>
+            `).join('');
+        }
+
+        initTestGrid();
+
+        // Benchmark Functions
+        const benchmarkFunctions = {
+            // Prime number sieve
+            prime: () => {
+                const limit = 500000;
+                const sieve = new Uint8Array(limit + 1);
+                let count = 0;
+                
+                for (let i = 2; i <= limit; i++) {
+                    if (!sieve[i]) {
+                        count++;
+                        for (let j = i * 2; j <= limit; j += i) {
+                            sieve[j] = 1;
+                        }
+                    }
+                }
+                return count;
+            },
+
+            // Matrix multiplication
+            matrix: () => {
+                const size = 200;
+                const a = [], b = [], c = [];
+                
+                for (let i = 0; i < size; i++) {
+                    a[i] = []; b[i] = []; c[i] = [];
+                    for (let j = 0; j < size; j++) {
+                        a[i][j] = Math.random();
+                        b[i][j] = Math.random();
+                        c[i][j] = 0;
+                    }
+                }
+                
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        let sum = 0;
+                        for (let k = 0; k < size; k++) {
+                            sum += a[i][k] * b[k][j];
+                        }
+                        c[i][j] = sum;
+                    }
+                }
+                return c[0][0];
+            },
+
+            // Cryptographic hash (simple SHA-like operations)
+            crypto: () => {
+                let hash = 0x811c9dc5;
+                const iterations = 2000000;
+                
+                for (let i = 0; i < iterations; i++) {
+                    hash ^= i;
+                    hash = Math.imul(hash, 0x01000193);
+                    hash = (hash << 5) | (hash >>> 27);
+                    hash ^= (hash >>> 16);
+                }
+                return hash;
+            },
+
+            // Floating point operations
+            float: () => {
+                let result = 0;
+                const iterations = 1500000;
+                
+                for (let i = 1; i < iterations; i++) {
+                    const x = i * 0.001;
+                    result += Math.sin(x) * Math.cos(x) * Math.sqrt(x);
+                    result += Math.tan(x * 0.1) * Math.log(x + 1);
+                    result += Math.exp(-x * 0.0001) * Math.atan(x);
+                }
+                return result;
+            },
+
+            // Integer operations
+            integer: () => {
+                let a = 1, b = 2, c = 3;
+                const iterations = 10000000;
+                
+                for (let i = 0; i < iterations; i++) {
+                    a = (b * c + i) | 0;
+                    b = (a ^ c) + (i >> 2) | 0;
+                    c = (a + b) % (i + 1 || 1) | 0;
+                    a = (b << 3) ^ (c >> 1) | 0;
+                    b = (a + c) & 0xFFFFFF | 0;
+                }
+                return a + b + c;
+            },
+
+            // Memory access patterns
+            memory: () => {
+                const size = 1000000;
+                const arr = new Float64Array(size);
+                
+                // Sequential write
+                for (let i = 0; i < size; i++) {
+                    arr[i] = i * 1.5;
+                }
+                
+                // Sequential read with computation
+                let sum = 0;
+                for (let i = 0; i < size; i++) {
+                    sum += arr[i];
+                }
+                
+                // Random access
+                let seed = 12345;
+                for (let i = 0; i < size / 2; i++) {
+                    seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF;
+                    const idx = seed % size;
+                    sum += arr[idx];
+                }
+                
+                return sum;
+            },
+
+            // Sorting
+            sort: () => {
+                const size = 200000;
+                const arr = new Array(size);
+                
+                for (let i = 0; i < size; i++) {
+                    arr[i] = Math.random() * 1000000 | 0;
+                }
+                
+                // QuickSort implementation
+                function quickSort(arr, left, right) {
+                    if (left < right) {
+                        const pivot = arr[Math.floor((left + right) / 2)];
+                        let i = left, j = right;
+                        
+                        while (i <= j) {
+                            while (arr[i] < pivot) i++;
+                            while (arr[j] > pivot) j--;
+                            if (i <= j) {
+                                [arr[i], arr[j]] = [arr[j], arr[i]];
+                                i++; j--;
+                            }
+                        }
+                        
+                        quickSort(arr, left, j);
+                        quickSort(arr, i, right);
+                    }
+                }
+                
+                quickSort(arr, 0, arr.length - 1);
+                return arr[0] + arr[size - 1];
+            },
+
+            // Fibonacci with memoization stress
+            fib: () => {
+                function fib(n, memo = {}) {
+                    if (n in memo) return memo[n];
+                    if (n <= 1) return BigInt(n);
+                    memo[n] = fib(n - 1, memo) + fib(n - 2, memo);
+                    return memo[n];
+                }
+                
+                let sum = BigInt(0);
+                for (let i = 0; i < 2000; i++) {
+                    sum += fib(500);
+                }
+                return Number(sum % BigInt(1000000));
+            },
+
+            // Monte Carlo Pi estimation
+            monte: () => {
+                let inside = 0;
+                const iterations = 5000000;
+                let seed = 42;
+                
+                function random() {
+                    seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF;
+                    return seed / 0x7FFFFFFF;
+                }
+                
+                for (let i = 0; i < iterations; i++) {
+                    const x = random();
+                    const y = random();
+                    if (x * x + y * y <= 1) inside++;
+                }
+                
+                return (4 * inside / iterations * 1000000) | 0;
+            },
+
+            // LZ77-style compression simulation
+            compress: () => {
+                const size = 50000;
+                let data = '';
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                
+                for (let i = 0; i < size; i++) {
+                    data += chars[Math.floor(Math.random() * chars.length)];
+                }
+                
+                // Simple pattern matching
+                const windowSize = 256;
+                let matches = 0;
+                
+                for (let i = windowSize; i < data.length; i++) {
+                    const lookAhead = data.substring(i, i + 16);
+                    const window = data.substring(i - windowSize, i);
+                    
+                    for (let len = 3; len <= lookAhead.length; len++) {
+                        const pattern = lookAhead.substring(0, len);
+                        if (window.includes(pattern)) {
+                            matches++;
+                        }
+                    }
+                }
+                
+                return matches;
+            }
+        };
+
+        // Run single benchmark
+        function runBenchmark(testId, iterations = 3) {
+            const times = [];
+            
+            for (let i = 0; i < iterations; i++) {
+                const start = performance.now();
+                benchmarkFunctions[testId]();
+                times.push(performance.now() - start);
+            }
+            
+            // Return median time
+            times.sort((a, b) => a - b);
+            return times[Math.floor(times.length / 2)];
+        }
+
+        // Calculate score from time
+        function calculateScore(time, weight) {
+            // Base score inversely proportional to time
+            // Normalized so that ~100ms gives approximately 1000 points
+            const baseScore = (10000 / time) * 100;
+            return Math.round(baseScore * weight);
+        }
+
+        // Update UI
+        function updateProgress(percent, testName) {
+            document.getElementById('progressPercent').textContent = `${Math.round(percent)}%`;
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            
+            if (testName) {
+                document.querySelector('#currentTest .test-name').textContent = testName;
+            }
+        }
+
+        function updateTestStatus(testId, status, score = null) {
+            const item = document.getElementById(`test-${testId}`);
+            const statusEl = document.getElementById(`status-${testId}`);
+            const scoreEl = document.getElementById(`score-${testId}`);
+            
+            item.classList.remove('running', 'completed');
+            statusEl.classList.remove('running', 'completed');
+            
+            if (status === 'running') {
+                item.classList.add('running');
+                statusEl.classList.add('running');
+            } else if (status === 'completed') {
+                item.classList.add('completed');
+                statusEl.classList.add('completed');
+                if (score !== null) {
+                    scoreEl.textContent = score.toLocaleString();
+                }
+            }
+        }
+
+        // Create Worker code as blob
+        function createWorkerBlob() {
+            const workerCode = `
+                const benchmarkFunctions = {
+                    prime: ${benchmarkFunctions.prime.toString()},
+                    matrix: ${benchmarkFunctions.matrix.toString()},
+                    crypto: ${benchmarkFunctions.crypto.toString()},
+                    float: ${benchmarkFunctions.float.toString()},
+                    integer: ${benchmarkFunctions.integer.toString()},
+                    memory: ${benchmarkFunctions.memory.toString()},
+                    sort: ${benchmarkFunctions.sort.toString()},
+                    fib: ${benchmarkFunctions.fib.toString()},
+                    monte: ${benchmarkFunctions.monte.toString()},
+                    compress: ${benchmarkFunctions.compress.toString()}
+                };
+
+                self.onmessage = function(e) {
+                    const { testId, iterations } = e.data;
+                    const times = [];
+                    
+                    for (let i = 0; i < iterations; i++) {
+                        const start = performance.now();
+                        benchmarkFunctions[testId]();
+                        times.push(performance.now() - start);
+                    }
+                    
+                    times.sort((a, b) => a - b);
+                    const medianTime = times[Math.floor(times.length / 2)];
+                    
+                    self.postMessage({ testId, time: medianTime });
+                };
+            `;
+            
+            return new Blob([workerCode], { type: 'application/javascript' });
+        }
+
+        // Run multi-core benchmark
+        async function runMultiCoreBenchmark(testId, weight) {
+            return new Promise((resolve) => {
+                const numWorkers = cpuInfo.cores;
+                const workerBlob = createWorkerBlob();
+                const workerUrl = URL.createObjectURL(workerBlob);
+                
+                let completedWorkers = 0;
+                let totalTime = 0;
+                const activeWorkers = [];
+                
+                for (let i = 0; i < numWorkers; i++) {
+                    const worker = new Worker(workerUrl);
+                    activeWorkers.push(worker);
+                    
+                    worker.onmessage = (e) => {
+                        totalTime += e.data.time;
+                        completedWorkers++;
+                        
+                        if (completedWorkers === numWorkers) {
+                            activeWorkers.forEach(w => w.terminate());
+                            URL.revokeObjectURL(workerUrl);
+                            
+                            // Average time across all workers
+                            const avgTime = totalTime / numWorkers;
+                            // Score boost for parallel execution
+                            const parallelScore = calculateScore(avgTime, weight) * (numWorkers * 0.85);
+                            resolve(Math.round(parallelScore));
+                        }
+                    };
+                    
+                    worker.postMessage({ testId, iterations: 2 });
+                }
+            });
+        }
+
+        // Main benchmark function
+        async function startBenchmark() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            testResults = { single: {}, multi: {} };
+            
+            const startBtn = document.getElementById('startBtn');
+            const progressSection = document.getElementById('progressSection');
+            const progressFill = document.getElementById('progressFill');
+            
+            startBtn.disabled = true;
+            startBtn.textContent = 'Running...';
+            progressSection.classList.remove('hidden');
+            progressFill.classList.add('running');
+            
+            // Reset scores display
+            document.getElementById('singleScore').textContent = '---';
+            document.getElementById('singleScore').classList.remove('reveal');
+            document.getElementById('multiScore').textContent = '---';
+            document.getElementById('multiScore').classList.remove('reveal');
+            document.getElementById('resultsSummary').classList.remove('visible');
+            
+            // Reset test items
+            benchmarkTests.forEach(test => {
+                updateTestStatus(test.id, 'pending');
+                document.getElementById(`score-${test.id}`).textContent = '-';
+            });
+            
+            const totalTests = benchmarkTests.length * 2; // Single + Multi
+            let completedTests = 0;
+            
+            // Run single-core tests
+            for (const test of benchmarkTests) {
+                updateTestStatus(test.id, 'running');
+                updateProgress((completedTests / totalTests) * 100, `Single-Core: ${test.name}`);
+                
+                // Small delay for UI update
+                await new Promise(r => setTimeout(r, 50));
+                
+                const time = runBenchmark(test.id, 3);
+                const score = calculateScore(time, test.weight);
+                testResults.single[test.id] = { time, score };
+                
+                updateTestStatus(test.id, 'completed', score);
+                completedTests++;
+            }
+            
+            // Calculate single-core total
+            const singleTotal = Object.values(testResults.single).reduce((sum, r) => sum + r.score, 0);
+            document.getElementById('singleScore').textContent = singleTotal.toLocaleString();
+            document.getElementById('singleScore').classList.add('reveal');
+            
+            // Run multi-core tests
+            for (const test of benchmarkTests) {
+                updateProgress((completedTests / totalTests) * 100, `Multi-Core: ${test.name}`);
+                
+                await new Promise(r => setTimeout(r, 50));
+                
+                const score = await runMultiCoreBenchmark(test.id, test.weight);
+                testResults.multi[test.id] = { score };
+                
+                completedTests++;
+            }
+            
+            // Calculate multi-core total
+            const multiTotal = Object.values(testResults.multi).reduce((sum, r) => sum + r.score, 0);
+            document.getElementById('multiScore').textContent = multiTotal.toLocaleString();
+            document.getElementById('multiScore').classList.add('reveal');
+            
+            // Update progress to 100%
+            updateProgress(100, 'Complete!');
+            progressFill.classList.remove('running');
+            
+            // Show results summary
+            showResultsSummary(singleTotal, multiTotal);
+            
+            // Reset button
+            startBtn.disabled = false;
+            startBtn.textContent = 'Run Again';
+            isRunning = false;
+        }
+
+        function showResultsSummary(singleTotal, multiTotal) {
+            const summaryContent = document.getElementById('summaryContent');
+            const ratio = (multiTotal / singleTotal).toFixed(2);
+            const efficiency = ((multiTotal / (singleTotal * cpuInfo.cores)) * 100).toFixed(1);
+            
+            let performanceRating, ratingClass;
+            if (singleTotal > 100000) {
+                performanceRating = 'Excellent';
+                ratingClass = 'excellent';
+            } else if (singleTotal > 50000) {
+                performanceRating = 'Good';
+                ratingClass = 'good';
+            } else {
+                performanceRating = 'Average';
+                ratingClass = 'average';
+            }
+            
+            summaryContent.innerHTML = `
+                <div class="metric-row">
+                    <span class="metric-name">Single-Core Score</span>
+                    <span class="metric-value">${singleTotal.toLocaleString()}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-name">Multi-Core Score</span>
+                    <span class="metric-value">${multiTotal.toLocaleString()}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-name">Multi/Single Ratio</span>
+                    <span class="metric-value">${ratio}x</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-name">Parallel Efficiency</span>
+                    <span class="metric-value">${efficiency}%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-name">Logical Cores Used</span>
+                    <span class="metric-value">${cpuInfo.cores}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-name">Performance Rating</span>
+                    <span class="metric-value">
+                        ${performanceRating}
+                        <span class="comparison-badge ${ratingClass}">${performanceRating}</span>
+                    </span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-name">Benchmark Duration</span>
+                    <span class="metric-value">${(Object.values(testResults.single).reduce((s, r) => s + r.time, 0) / 1000).toFixed(1)}s</span>
+                </div>
+            `;
+            
+            document.getElementById('resultsSummary').classList.add('visible');
+        }
+    </script>
+</body>
+</html>
+
