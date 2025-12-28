@@ -1,2 +1,2 @@
 # benchmarks
-A set of CPU benchmark tests written in JS to run in browser using web worker
+A set of CPU benchmark tests written in multiple programming languages
